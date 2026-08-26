@@ -352,11 +352,10 @@ export const UIModule = {
             viewGroupContainer = element;
           } else if (
             !currentNode.viewGroup &&
-              !currentNode.isolateView &&
-              !currentNode.webcomponent &&
-              element.viewurl &&
-              (preventContextUpdate ||
-                (resolvedViewUrl && GenericHelpers.isSameUrl(element.viewurl, resolvedViewUrl)))
+            !currentNode.isolateView &&
+            !currentNode.webcomponent &&
+            element.viewurl &&
+            (preventContextUpdate || (resolvedViewUrl && GenericHelpers.isSameUrl(element.viewurl, resolvedViewUrl)))
           ) {
             viewGroupContainer = element;
           } else {

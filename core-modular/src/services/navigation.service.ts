@@ -110,9 +110,11 @@ export class NavigationService {
       dirtyStatusService.getUnsavedChangesModalPromise().then(
         () => {
           const containerWrapper = this.luigi.getEngine()._connector?.getContainerWrapper();
-          const activeContainer = containerWrapper ? [...containerWrapper.childNodes].find(
-            (element: any) => element.tagName?.indexOf('LUIGI-') === 0 && element.style?.display !== 'none'
-          ) : undefined;
+          const activeContainer = containerWrapper
+            ? [...containerWrapper.childNodes].find(
+                (element: any) => element.tagName?.indexOf('LUIGI-') === 0 && element.style?.display !== 'none'
+              )
+            : undefined;
           const previousActiveViewData = this._preservedViews.pop();
 
           activeContainer?.remove();

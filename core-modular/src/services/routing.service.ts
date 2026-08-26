@@ -184,7 +184,14 @@ export class RoutingService {
       this.currentRoute.node = currentNode;
       this.getNavigationService().onNodeChange(this.previousNode, currentNode);
       this.previousNode = currentNode;
-      await UIModule.updateMainContent(currentNode, this.luigi, luigiParams, withoutSync, preventContextUpdate, preserveView);
+      await UIModule.updateMainContent(
+        currentNode,
+        this.luigi,
+        luigiParams,
+        withoutSync,
+        preventContextUpdate,
+        preserveView
+      );
       this.previousPathData = pathData;
     }
   }
