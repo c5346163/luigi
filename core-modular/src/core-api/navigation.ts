@@ -40,7 +40,7 @@ export class Navigation {
 
   navigate = async (
     path: string,
-    preserveView?: string,
+    preserveView?: boolean,
     modalSettings?: ModalSettings,
     splitViewSettings?: any,
     drawerSettings?: any
@@ -213,7 +213,7 @@ export class Navigation {
    * @returns {boolean} indicating if there is a preserved view you can return to
    */
   hasBack = (): boolean => {
-    return this.modalService.getModalStackLength() > 0 || this.navService.getPreservedViewsLength() !== 0;
+    return this.modalService.getModalStackLength() > 0 || this.navService.getPreservedViewsLength() > 0;
   };
 
   /**
@@ -223,7 +223,7 @@ export class Navigation {
    * Luigi.navigation().goBack({ foo: 'bar' });
    * Luigi.navigation().goBack(true);
    */
-  goBack = (goBackValue: any): void => {
+  goBack = (goBackValue?: any): void => {
     this.navService.handleGoBackRequest(goBackValue);
   };
 

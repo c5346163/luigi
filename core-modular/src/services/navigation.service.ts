@@ -87,15 +87,40 @@ export class NavigationService {
     return paths.includes(removeQueryParams(routePath));
   }
 
-  handleGoBackRequest(goBackContext: any): void {
+  processGoBackContext(goBackContext: any): void {
+    if (goBackContext && Object.keys(goBackContext).length) {
+      const containerWrapper = this.luigi.getEngine()._connector?.getContainerWrapper();
+
+      if (containerWrapper) {
+        const activeContainer = [...containerWrapper.childNodes].find(
+          (element: any) => element.tagName?.indexOf('LUIGI-') === 0 && element.style?.display !== 'none'
+        ) as any;
+
+        if (activeContainer?.updateContext) {
+          activeContainer.updateContext({ goBackContext }, { withoutSync: false });
+        }
+      }
+    }
+  }
+
+  handleGoBackRequest(goBackContext?: any): void {
     if (this.getPreservedViewsLength() > 0) {
       const dirtyStatusService = serviceRegistry.get(DirtyStatusService);
 
       dirtyStatusService.getUnsavedChangesModalPromise().then(
         () => {
-          const previousActiveIframeData = this._preservedViews.pop();
+          const containerWrapper = this.luigi.getEngine()._connector?.getContainerWrapper();
+          const activeContainer = containerWrapper ? [...containerWrapper.childNodes].find(
+            (element: any) => element.tagName?.indexOf('LUIGI-') === 0 && element.style?.display !== 'none'
+          ) : undefined;
+          const previousActiveViewData = this._preservedViews.pop();
 
-          this.handleNavigationRequest({ path: previousActiveIframeData.path });
+          activeContainer?.remove();
+          this.processGoBackContext(goBackContext);
+
+          if (previousActiveViewData?.path) {
+            this.handleNavigationRequest({ path: previousActiveViewData.path, withoutSync: false });
+          }
         },
         () => {}
       );
@@ -1150,19 +1175,6 @@ export class NavigationService {
       return;
     }
 
-    if (preserveView) {
-      const nextPath = computedPath;
-      const pathData: PathData = await this.getPathData(path);
-      const currentNode = pathData.selectedNode as Node;
-      const nodePath = RoutingHelpers.getNodePath(currentNode);
-
-      this._preservedViews.push({
-        context: pathData.context,
-        nextPath: nextPath.startsWith('/') ? nextPath : '/' + nextPath,
-        path: nodePath
-      });
-    }
-
     if (!isSpecial) {
       const dirtyStatusService = serviceRegistry.get(DirtyStatusService);
 
@@ -1192,6 +1204,18 @@ export class NavigationService {
     const chosenHistoryMethod: HistoryMethod = !preventHistoryEntry ? 'pushState' : 'replaceState';
     const { path: currentPath, query: currentQuery } = RoutingHelpers.getCurrentPath(this.luigi, hashRouting);
     const currentFullPath = currentPath + (currentQuery ? '?' + currentQuery : '');
+
+    if (preserveView) {
+      const pathData: PathData = await this.getPathData(currentPath);
+
+      this._preservedViews.push({
+        context: pathData.context,
+        nextPath: computedPath.startsWith('/') ? computedPath : '/' + computedPath,
+        path: pathData?.pathParams
+          ? GenericHelpers.replaceVars(currentPath, pathData.pathParams, ':', false)
+          : currentPath
+      });
+    }
 
     // Navigating to the page you are already on is a no-op, but an overlay is not a navigation:
     // a modal or drawer is independent of the main route, so it must open even when its path
@@ -1227,6 +1251,7 @@ export class NavigationService {
     } else {
       const eventDetail: NavigationRequestEvent = {
         detail: {
+          preserveView: !!preserveView,
           preventContextUpdate: !!preventContextUpdate,
           preventHistoryEntry: !!preventHistoryEntry,
           withoutSync: !!withoutSync

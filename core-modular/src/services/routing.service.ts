@@ -62,25 +62,29 @@ export class RoutingService {
 
     if (luigiConfig.routing?.useHashRouting) {
       EventListenerHelpers.addEventListener('hashchange', (ev: HashChangeEvent) => {
+        const preserveView = !!(ev as any)?.detail?.preserveView;
         const preventContextUpdate = !!(ev as any)?.detail?.preventContextUpdate;
         const withoutSync = !!(ev as any)?.detail?.withoutSync;
 
         this.handleRouteChange(
           RoutingHelpers.getCurrentPath(this.luigi, true, true),
           withoutSync,
-          preventContextUpdate
+          preventContextUpdate,
+          preserveView
         );
       });
       this.handleRouteChange(RoutingHelpers.getCurrentPath(this.luigi, true, true));
     } else {
       EventListenerHelpers.addEventListener('popstate', (ev: PopStateEvent) => {
+        const preserveView = !!(ev as any)?.detail?.preserveView;
         const preventContextUpdate = !!(ev as any)?.detail?.preventContextUpdate;
         const withoutSync = !!(ev as any)?.detail?.withoutSync;
 
         this.handleRouteChange(
           RoutingHelpers.getCurrentPath(this.luigi, false, true),
           withoutSync,
-          preventContextUpdate
+          preventContextUpdate,
+          preserveView
         );
       });
       this.handleRouteChange(RoutingHelpers.getCurrentPath(this.luigi, false, true));
@@ -92,12 +96,14 @@ export class RoutingService {
    * @param {Object} routeInfo - the information about path and query
    * @param {boolean} withoutSync - disables the navigation handling for a single navigation request
    * @param {boolean} preventContextUpdate - make no context update being triggered
+   * @param {boolean} preserveView - preserve a view by setting it to true
    * @returns {Promise<void>} A promise that resolves when route change is complete.
    */
   async handleRouteChange(
     routeInfo: { path: string; query: string },
     withoutSync = false,
-    preventContextUpdate = false
+    preventContextUpdate = false,
+    preserveView = false
   ): Promise<void> {
     const path = routeInfo.path;
     const query = routeInfo.query;
@@ -121,7 +127,7 @@ export class RoutingService {
       return;
     }
 
-    if (this.getNavigationService().isValidBackRoute(path)) {
+    if (!this.getNavigationService().isValidBackRoute(path)) {
       this.getNavigationService().clearPreservedViews();
     }
 
@@ -178,7 +184,7 @@ export class RoutingService {
       this.currentRoute.node = currentNode;
       this.getNavigationService().onNodeChange(this.previousNode, currentNode);
       this.previousNode = currentNode;
-      await UIModule.updateMainContent(currentNode, this.luigi, luigiParams, withoutSync, preventContextUpdate);
+      await UIModule.updateMainContent(currentNode, this.luigi, luigiParams, withoutSync, preventContextUpdate, preserveView);
       this.previousPathData = pathData;
     }
   }
