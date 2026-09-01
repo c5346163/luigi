@@ -24,9 +24,9 @@
   }
 </script>
 
-<nav class="fd-menu lui-ctx-switch-nav {isMobile ? 'fd-menu--mobile' : ''}">
+<div class="fd-menu lui-ctx-switch-nav {isMobile ? 'fd-menu--mobile' : ''}" role="menu">
   {#if actions && actions.length}
-    <ul class="fd-menu__list fd-menu__list--top">
+    <ul class="fd-menu__list fd-menu__list--top" role="none">
       {#each actions as node}
         {#if node.position === 'top' || !['top', 'bottom'].includes(node.position)}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -36,7 +36,13 @@
             on:click={() => onActionClick(node)}
             data-testid={NavigationHelpers.getTestId(node)}
           >
-            <a href={getRouteLink(node)} on:click|preventDefault={() => {}} class="fd-menu__link">
+            <a
+              href={getRouteLink(node)}
+              on:click|preventDefault={() => {}}
+              class="fd-menu__link"
+              role="menuitem"
+              tabindex="-1"
+            >
               <span class="fd-menu__title">{$getTranslation(node.label)}</span>
             </a>
           </li>
@@ -44,7 +50,7 @@
       {/each}
     </ul>
   {/if}
-  <ul class="fd-menu__list" id="context_menu_middle">
+  <ul class="fd-menu__list" id="context_menu_middle" role="none">
     {#if options && options.length === 0 && isContextSwitcherDropdownShown}
       <li class="lui-contextswitcher-indicator">
         <div
@@ -79,6 +85,9 @@
                 }}
                 class="fd-menu__link {label === selectedLabel ? 'is-selected' : ''}"
                 title={label}
+                role="menuitem"
+                tabindex="-1"
+                aria-current={label === selectedLabel ? 'true' : undefined}
               >
                 <span class="fd-menu__title">{label}</span>
               </a>
@@ -89,7 +98,7 @@
     {/if}
   </ul>
   {#if actions && actions.length}
-    <ul class="fd-menu__list fd-menu__list--bottom">
+    <ul class="fd-menu__list fd-menu__list--bottom" role="none">
       {#each actions as node}
         {#if node.position === 'bottom'}
           <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -105,6 +114,8 @@
                 NavigationHelpers.handleNavAnchorClickedWithoutMetaKey(event);
               }}
               class="fd-menu__link"
+              role="menuitem"
+              tabindex="-1"
             >
               <span class="fd-menu__title">{$getTranslation(node.label)}</span>
             </a>
@@ -113,7 +124,7 @@
       {/each}
     </ul>
   {/if}
-</nav>
+</div>
 
 <style lang="scss">
   :global(.fd-popover__body) {

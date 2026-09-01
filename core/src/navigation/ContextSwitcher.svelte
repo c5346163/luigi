@@ -1,5 +1,5 @@
 <script>
-  import { createEventDispatcher, onMount, getContext, beforeUpdate } from 'svelte';
+  import { createEventDispatcher, onMount, getContext, beforeUpdate, afterUpdate } from 'svelte';
   import { ContextSwitcherHelpers } from './services/context-switcher';
   import ContextSwitcherNav from './ContextSwitcherNav.svelte';
   import { LuigiConfig } from '../core-api';
@@ -10,7 +10,8 @@
     StateHelpers,
     NavigationHelpers,
     GenericHelpers,
-    EventListenerHelpers
+    EventListenerHelpers,
+    DropdownKeyboardHelpers
   } from '../utilities/helpers';
 
   const dispatch = createEventDispatcher();
@@ -40,6 +41,9 @@
   let selectedNodePath;
   export let addNavHrefForAnchor;
   let isContextSwitcherDropdownShown;
+  let popoverEl;
+  let wasDropdownShown = false;
+  let focusMenuOnOpen = 'first';
 
   onMount(async () => {
     StateHelpers.doOnStoreChange(store, async () => {
@@ -195,6 +199,68 @@
       fetchOptions();
     }
   }
+
+  function isDropdownOpen() {
+    return Boolean(dropDownStates && dropDownStates.contextSwitcherPopover);
+  }
+
+  function focusMenuItem(which) {
+    const items = DropdownKeyboardHelpers.getMenuItems(popoverEl);
+    if (!items.length) {
+      return;
+    }
+    const index = which === 'last' ? items.length - 1 : 0;
+    DropdownKeyboardHelpers.applyRovingTabindex(items, index);
+  }
+
+  function closeAndFocusTrigger() {
+    if (isDropdownOpen()) {
+      toggleDropdownState();
+    }
+    const trigger = document.querySelector('[data-testid="luigi-contextswitcher-button"]');
+    if (trigger) {
+      trigger.focus();
+    }
+  }
+
+  function onTriggerKeydown(event) {
+    DropdownKeyboardHelpers.handleTriggerKeydown(event, {
+      isOpen: isDropdownOpen(),
+      isDisabled: !renderAsDropdown || event.currentTarget.getAttribute('aria-disabled') === 'true',
+      isAnchor: event.currentTarget.tagName === 'A',
+      onToggle: (focus) => {
+        if (focus) {
+          focusMenuOnOpen = focus;
+        }
+        toggleDropdownState();
+      },
+      onFocusFirst: () => focusMenuItem('first'),
+      onFocusLast: () => focusMenuItem('last'),
+      onClose: closeAndFocusTrigger
+    });
+  }
+
+  function onPopoverKeydown(event) {
+    DropdownKeyboardHelpers.handleMenuKeydown(event, {
+      items: DropdownKeyboardHelpers.getMenuItems(event.currentTarget),
+      onEscape: closeAndFocusTrigger,
+      onActivate: (item) => item.click()
+    });
+  }
+
+  afterUpdate(() => {
+    if (!isContextSwitcherDropdownShown) {
+      wasDropdownShown = false;
+      return;
+    }
+    const items = DropdownKeyboardHelpers.getMenuItems(popoverEl);
+    if (!items.length || wasDropdownShown) {
+      return;
+    }
+    focusMenuItem(focusMenuOnOpen);
+    focusMenuOnOpen = 'first';
+    wasDropdownShown = true;
+  });
 </script>
 
 {#if contextSwitcherEnabled}
@@ -208,17 +274,15 @@
             <a
               href={selectedOption ? getRouteLink(selectedOption) : undefined}
               class="fd-button fd-button--transparent fd-shellbar__button fd-button--menu fd-shellbar__button--menu lui-ctx-switch-menu"
+              aria-controls="contextSwitcherPopover"
+              aria-expanded={dropDownStates.contextSwitcherPopover || false}
               aria-haspopup="true"
               tabindex="0"
               title={selectedLabel ? selectedLabel : config.defaultLabel}
               on:click|preventDefault={() => {
                 if (renderAsDropdown) toggleDropdownState();
               }}
-              on:keyup={(event) => {
-                if (renderAsDropdown) {
-                  (event.key === 'Enter' || event.code === 'Space') && toggleDropdownState();
-                }
-              }}
+              on:keydown={onTriggerKeydown}
               aria-disabled={!renderAsDropdown}
               data-testid="luigi-contextswitcher-button"
             >
@@ -240,11 +304,7 @@
               on:click={() => {
                 if (renderAsDropdown) toggleDropdownState();
               }}
-              on:keyup={(event) => {
-                if (renderAsDropdown) {
-                  (event.key === 'Enter' || event.code === 'Space') && toggleDropdownState();
-                }
-              }}
+              on:keydown={onTriggerKeydown}
               aria-disabled={!renderAsDropdown}
               data-testid="luigi-contextswitcher-button"
             >
@@ -257,11 +317,15 @@
             </button>
           {/if}
         </div>
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
         <div
+          bind:this={popoverEl}
           class="fd-popover__body fd-popover__body--right"
           aria-hidden={!(dropDownStates.contextSwitcherPopover || false)}
           id="contextSwitcherPopover"
           data-testid="luigi-contextswitcher-popover"
+          on:keydown={onPopoverKeydown}
         >
           <ContextSwitcherNav
             {actions}
