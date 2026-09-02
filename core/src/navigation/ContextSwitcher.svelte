@@ -1,5 +1,5 @@
 <script>
-  import { createEventDispatcher, onMount, getContext, beforeUpdate, afterUpdate } from 'svelte';
+  import { createEventDispatcher, onMount, getContext, beforeUpdate } from 'svelte';
   import { ContextSwitcherHelpers } from './services/context-switcher';
   import ContextSwitcherNav from './ContextSwitcherNav.svelte';
   import { LuigiConfig } from '../core-api';
@@ -42,8 +42,8 @@
   export let addNavHrefForAnchor;
   let isContextSwitcherDropdownShown;
   let popoverEl;
-  let wasDropdownShown = false;
   let focusMenuOnOpen = 'first';
+  let skipNextTriggerClick = false;
 
   onMount(async () => {
     StateHelpers.doOnStoreChange(store, async () => {
@@ -223,14 +223,38 @@
     }
   }
 
+  function onTriggerMouseDown(event) {
+    if (renderAsDropdown) {
+      event.preventDefault();
+    }
+  }
+
+  function onTriggerClick(event) {
+    if (event) {
+      event.preventDefault();
+    }
+    if (!renderAsDropdown) {
+      return;
+    }
+    if (skipNextTriggerClick) {
+      skipNextTriggerClick = false;
+      return;
+    }
+    focusMenuOnOpen = 'first';
+    toggleDropdownState();
+  }
+
   function onTriggerKeydown(event) {
     DropdownKeyboardHelpers.handleTriggerKeydown(event, {
       isOpen: isDropdownOpen(),
       isDisabled: !renderAsDropdown || event.currentTarget.getAttribute('aria-disabled') === 'true',
-      isAnchor: event.currentTarget.tagName === 'A',
       onToggle: (focus) => {
-        if (focus) {
-          focusMenuOnOpen = focus;
+        focusMenuOnOpen = focus || 'first';
+        if (DropdownKeyboardHelpers.isActivationKey(event)) {
+          skipNextTriggerClick = true;
+          setTimeout(() => {
+            skipNextTriggerClick = false;
+          }, 50);
         }
         toggleDropdownState();
       },
@@ -247,20 +271,6 @@
       onActivate: (item) => item.click()
     });
   }
-
-  afterUpdate(() => {
-    if (!isContextSwitcherDropdownShown) {
-      wasDropdownShown = false;
-      return;
-    }
-    const items = DropdownKeyboardHelpers.getMenuItems(popoverEl);
-    if (!items.length || wasDropdownShown) {
-      return;
-    }
-    focusMenuItem(focusMenuOnOpen);
-    focusMenuOnOpen = 'first';
-    wasDropdownShown = true;
-  });
 </script>
 
 {#if contextSwitcherEnabled}
@@ -279,9 +289,8 @@
               aria-haspopup="true"
               tabindex="0"
               title={selectedLabel ? selectedLabel : config.defaultLabel}
-              on:click|preventDefault={() => {
-                if (renderAsDropdown) toggleDropdownState();
-              }}
+              on:mousedown={onTriggerMouseDown}
+              on:click={onTriggerClick}
               on:keydown={onTriggerKeydown}
               aria-disabled={!renderAsDropdown}
               data-testid="luigi-contextswitcher-button"
@@ -301,9 +310,8 @@
               aria-haspopup="true"
               tabindex="0"
               title={selectedLabel ? selectedLabel : config.defaultLabel}
-              on:click={() => {
-                if (renderAsDropdown) toggleDropdownState();
-              }}
+              on:mousedown={onTriggerMouseDown}
+              on:click={onTriggerClick}
               on:keydown={onTriggerKeydown}
               aria-disabled={!renderAsDropdown}
               data-testid="luigi-contextswitcher-button"
@@ -339,6 +347,7 @@
             {getTranslation}
             {isMobile}
             {isContextSwitcherDropdownShown}
+            {focusMenuOnOpen}
             on:onActionClick={onActionClick}
             on:goToOption={goToOption}
           />
@@ -379,6 +388,7 @@
             {getTranslation}
             {isMobile}
             {isContextSwitcherDropdownShown}
+            {focusMenuOnOpen}
             on:onActionClick={onActionClick}
             on:goToOption={goToOption}
           />

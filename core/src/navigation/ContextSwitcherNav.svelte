@@ -1,6 +1,6 @@
 <script>
-  import { createEventDispatcher } from 'svelte';
-  import { NavigationHelpers } from '../utilities/helpers';
+  import { afterUpdate, createEventDispatcher, onDestroy } from 'svelte';
+  import { DropdownKeyboardHelpers, NavigationHelpers } from '../utilities/helpers';
 
   export let actions = [];
   export let config = {};
@@ -13,6 +13,11 @@
   export let getRouteLink;
   export let getTranslation;
   export let isContextSwitcherDropdownShown;
+  export let focusMenuOnOpen = 'first';
+
+  let menuEl;
+  let wasDropdownShown = false;
+  let focusTimeout;
 
   const dispatch = createEventDispatcher();
   export function onActionClick(node) {
@@ -22,9 +27,60 @@
   export function goToOption(option, selectedOption) {
     dispatch('goToOption', { option, selectedOption });
   }
+
+  function clearFocusTimeout() {
+    if (focusTimeout) {
+      clearTimeout(focusTimeout);
+      focusTimeout = undefined;
+    }
+  }
+
+  function tryFocusOpenItem() {
+    if (!isContextSwitcherDropdownShown) {
+      return true;
+    }
+    const menuItems = DropdownKeyboardHelpers.getMenuItems(menuEl);
+    if (!menuItems.length) {
+      return false;
+    }
+    if (menuItems.includes(document.activeElement)) {
+      wasDropdownShown = true;
+      return true;
+    }
+    const index = focusMenuOnOpen === 'last' ? menuItems.length - 1 : 0;
+    DropdownKeyboardHelpers.applyRovingTabindex(menuItems, index);
+    if (menuItems.includes(document.activeElement)) {
+      wasDropdownShown = true;
+      return true;
+    }
+    return false;
+  }
+
+  afterUpdate(() => {
+    if (!isContextSwitcherDropdownShown) {
+      wasDropdownShown = false;
+      clearFocusTimeout();
+      return;
+    }
+    if (wasDropdownShown) {
+      return;
+    }
+    // Labels render inside {#await}. Retry until a menuitem actually holds focus
+    // so the trigger click cannot steal it back.
+    const attempt = (remaining) => {
+      if (tryFocusOpenItem() || remaining <= 0) {
+        return;
+      }
+      focusTimeout = setTimeout(() => attempt(remaining - 1), 20);
+    };
+    clearFocusTimeout();
+    focusTimeout = setTimeout(() => attempt(25), 0);
+  });
+
+  onDestroy(clearFocusTimeout);
 </script>
 
-<div class="fd-menu lui-ctx-switch-nav {isMobile ? 'fd-menu--mobile' : ''}" role="menu">
+<div bind:this={menuEl} class="fd-menu lui-ctx-switch-nav {isMobile ? 'fd-menu--mobile' : ''}" role="menu">
   {#if actions && actions.length}
     <ul class="fd-menu__list fd-menu__list--top" role="none">
       {#each actions as node}

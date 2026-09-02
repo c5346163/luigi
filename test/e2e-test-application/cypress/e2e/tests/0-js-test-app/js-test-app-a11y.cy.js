@@ -551,6 +551,7 @@ describe('JS-TEST-APP 4', () => {
       cy.get('[data-testid="luigi-contextswitcher-button"]').click();
       cy.get('#contextSwitcherPopover').should('have.attr', 'aria-hidden', 'false');
       cy.get('[data-testid="luigi-contextswitcher-button"]').should('have.attr', 'aria-expanded', 'true');
+      cy.get('#contextSwitcherPopover a.fd-menu__link').should('have.length.at.least', 2);
       cy.get('#contextSwitcherPopover a.fd-menu__link').first().should('have.focus');
       cy.focused().type('{downArrow}');
       cy.get('#contextSwitcherPopover a.fd-menu__link').eq(1).should('have.focus');
@@ -568,6 +569,7 @@ describe('JS-TEST-APP 4', () => {
     it('closes on Escape and restores focus to the trigger', () => {
       cy.visitTestApp('/', newConfig);
       cy.get('[data-testid="luigi-contextswitcher-button"]').click();
+      cy.get('#contextSwitcherPopover a.fd-menu__link').should('have.length.at.least', 2);
       cy.get('#contextSwitcherPopover a.fd-menu__link').first().should('have.focus');
       cy.focused().type('{esc}');
       cy.get('#contextSwitcherPopover').should('have.attr', 'aria-hidden', 'true');

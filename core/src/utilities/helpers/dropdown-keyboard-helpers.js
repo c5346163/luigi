@@ -82,7 +82,7 @@ class DropdownKeyboardHelpersClass {
     }
   }
 
-  handleTriggerKeydown(event, { isOpen, isDisabled, isAnchor, onToggle, onFocusFirst, onFocusLast, onClose } = {}) {
+  handleTriggerKeydown(event, { isOpen, isDisabled, onToggle, onFocusFirst, onFocusLast, onClose } = {}) {
     if (isDisabled) {
       if (this.isActivationKey(event) || event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
@@ -129,7 +129,7 @@ class DropdownKeyboardHelpersClass {
       return;
     }
 
-    if (this.isSpaceKey(event) && isAnchor && onToggle) {
+    if (this.isActivationKey(event) && onToggle) {
       event.preventDefault();
       onToggle();
     }
