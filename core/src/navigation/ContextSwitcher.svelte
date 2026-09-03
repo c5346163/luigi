@@ -1,5 +1,5 @@
 <script>
-  import { createEventDispatcher, onMount, getContext, beforeUpdate } from 'svelte';
+  import { createEventDispatcher, onMount, getContext, beforeUpdate, tick } from 'svelte';
   import { ContextSwitcherHelpers } from './services/context-switcher';
   import ContextSwitcherNav from './ContextSwitcherNav.svelte';
   import { LuigiConfig } from '../core-api';
@@ -213,14 +213,17 @@
     DropdownKeyboardHelpers.applyRovingTabindex(items, index);
   }
 
-  function closeAndFocusTrigger() {
+  async function closeAndFocusTrigger() {
     if (isDropdownOpen()) {
       toggleDropdownState();
     }
-    const trigger = document.querySelector('[data-testid="luigi-contextswitcher-button"]');
-    if (trigger) {
-      trigger.focus();
-    }
+    await tick();
+    setTimeout(() => {
+      const trigger = document.querySelector('[data-testid="luigi-contextswitcher-button"]');
+      if (trigger) {
+        trigger.focus();
+      }
+    }, 0);
   }
 
   function onTriggerMouseDown(event) {

@@ -43,6 +43,10 @@
     if (!menuEl.getClientRects().length) {
       return false;
     }
+    const popover = document.getElementById('contextSwitcherPopover');
+    if (!popover || popover.getAttribute('aria-hidden') !== 'false') {
+      return false;
+    }
     const menuItems = DropdownKeyboardHelpers.getMenuItems(menuEl);
     if (!menuItems.length) {
       return false;
@@ -57,6 +61,10 @@
 
   function recaptureFocusFromTrigger() {
     if (!isContextSwitcherDropdownShown || isMobile) {
+      return;
+    }
+    const popover = document.getElementById('contextSwitcherPopover');
+    if (!popover || popover.getAttribute('aria-hidden') !== 'false') {
       return;
     }
     const trigger = document.querySelector('[data-testid="luigi-contextswitcher-button"]');
