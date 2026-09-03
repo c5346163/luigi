@@ -248,13 +248,14 @@
     DropdownKeyboardHelpers.handleTriggerKeydown(event, {
       isOpen: isDropdownOpen(),
       isDisabled: !renderAsDropdown || event.currentTarget.getAttribute('aria-disabled') === 'true',
+      isAnchor: event.currentTarget.tagName === 'A',
       onToggle: (focus) => {
         focusMenuOnOpen = focus || 'first';
-        if (DropdownKeyboardHelpers.isActivationKey(event)) {
+        if (event.currentTarget.tagName === 'A' && DropdownKeyboardHelpers.isActivationKey(event)) {
           skipNextTriggerClick = true;
           setTimeout(() => {
             skipNextTriggerClick = false;
-          }, 50);
+          }, 500);
         }
         toggleDropdownState();
       },
@@ -277,10 +278,11 @@
   <!-- DESKTOP VERSION (popover): -->
   {#if !isMobile}
     <div class="fd-shellbar__action fd-shellbar__action--desktop">
-      <div class="fd-popover fd-popover--right">
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <!-- svelte-ignore a11y-no-static-element-interactions -->
+      <div class="fd-popover fd-popover--right" on:click|stopPropagation={() => {}}>
         <div class="fd-popover__control" role="presentation" on:click|stopPropagation={() => {}}>
-          {#if addNavHrefForAnchor && selectedOption !== config.defaultLabel}
+          {#if addNavHrefForAnchor && selectedOption}
             <a
               href={selectedOption ? getRouteLink(selectedOption) : undefined}
               class="fd-button fd-button--transparent fd-shellbar__button fd-button--menu fd-shellbar__button--menu lui-ctx-switch-menu"

@@ -1,5 +1,5 @@
 <script>
-  import { afterUpdate, createEventDispatcher, onDestroy } from 'svelte';
+  import { afterUpdate, createEventDispatcher, onDestroy, onMount } from 'svelte';
   import { DropdownKeyboardHelpers, NavigationHelpers } from '../utilities/helpers';
 
   export let actions = [];
@@ -16,7 +16,6 @@
   export let focusMenuOnOpen = 'first';
 
   let menuEl;
-  let wasDropdownShown = false;
   let focusTimeout;
 
   const dispatch = createEventDispatcher();
@@ -35,49 +34,66 @@
     }
   }
 
-  function tryFocusOpenItem() {
-    if (!isContextSwitcherDropdownShown) {
-      return true;
+  function focusOpenItem() {
+    // Two ContextSwitcher instances share dropDownStates. The mobile copy
+    // must not steal focus from the desktop popover that the e2e asserts on.
+    if (!isContextSwitcherDropdownShown || !menuEl || isMobile) {
+      return false;
+    }
+    if (!menuEl.getClientRects().length) {
+      return false;
     }
     const menuItems = DropdownKeyboardHelpers.getMenuItems(menuEl);
     if (!menuItems.length) {
       return false;
     }
     if (menuItems.includes(document.activeElement)) {
-      wasDropdownShown = true;
       return true;
     }
     const index = focusMenuOnOpen === 'last' ? menuItems.length - 1 : 0;
     DropdownKeyboardHelpers.applyRovingTabindex(menuItems, index);
-    if (menuItems.includes(document.activeElement)) {
-      wasDropdownShown = true;
-      return true;
+    return menuItems.includes(document.activeElement);
+  }
+
+  function recaptureFocusFromTrigger() {
+    if (!isContextSwitcherDropdownShown || isMobile) {
+      return;
     }
-    return false;
+    const trigger = document.querySelector('[data-testid="luigi-contextswitcher-button"]');
+    if (document.activeElement === trigger) {
+      focusOpenItem();
+    }
   }
 
   afterUpdate(() => {
     if (!isContextSwitcherDropdownShown) {
-      wasDropdownShown = false;
       clearFocusTimeout();
       return;
     }
-    if (wasDropdownShown) {
-      return;
-    }
-    // Labels render inside {#await}. Retry until a menuitem actually holds focus
-    // so the trigger click cannot steal it back.
-    const attempt = (remaining) => {
-      if (tryFocusOpenItem() || remaining <= 0) {
+    clearFocusTimeout();
+    const started = Date.now();
+    const tick = () => {
+      if (!isContextSwitcherDropdownShown || Date.now() - started > 4000) {
         return;
       }
-      focusTimeout = setTimeout(() => attempt(remaining - 1), 20);
+      const menuItems = DropdownKeyboardHelpers.getMenuItems(menuEl);
+      if (!menuItems.length || !menuItems.includes(document.activeElement)) {
+        recaptureFocusFromTrigger();
+        focusOpenItem();
+        focusTimeout = setTimeout(tick, 50);
+      }
     };
-    clearFocusTimeout();
-    focusTimeout = setTimeout(() => attempt(25), 0);
+    focusTimeout = setTimeout(tick, 0);
   });
 
-  onDestroy(clearFocusTimeout);
+  onMount(() => {
+    document.addEventListener('focusin', recaptureFocusFromTrigger);
+  });
+
+  onDestroy(() => {
+    document.removeEventListener('focusin', recaptureFocusFromTrigger);
+    clearFocusTimeout();
+  });
 </script>
 
 <div bind:this={menuEl} class="fd-menu lui-ctx-switch-nav {isMobile ? 'fd-menu--mobile' : ''}" role="menu">
