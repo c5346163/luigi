@@ -346,6 +346,28 @@ describe('Dropdown-keyboard-helpers', () => {
       assert.isTrue(event.defaultPrevented);
     });
 
+    it('toggles a button trigger on Enter when only keyCode is set', () => {
+      const trigger = document.createElement('button');
+      document.body.appendChild(trigger);
+      let toggled = false;
+      const event = new KeyboardEvent('keydown', {
+        key: 'Unidentified',
+        keyCode: 13,
+        which: 13,
+        bubbles: true,
+        cancelable: true
+      });
+
+      DropdownKeyboardHelpers.handleTriggerKeydown(event, {
+        onToggle: () => {
+          toggled = true;
+        }
+      });
+
+      assert.isTrue(toggled);
+      assert.isTrue(event.defaultPrevented);
+    });
+
     it('prevents activation keys on a disabled trigger', () => {
       const trigger = document.createElement('a');
       document.body.appendChild(trigger);

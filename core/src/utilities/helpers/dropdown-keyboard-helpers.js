@@ -3,12 +3,49 @@ class DropdownKeyboardHelpersClass {
     this.MENU_ITEM_SELECTOR = 'a.fd-menu__link';
   }
 
+  eventKey(event) {
+    if (event.key && event.key !== 'Unidentified') {
+      return event.key;
+    }
+    const code = event.code;
+    const which = event.which || event.keyCode;
+    if (code === 'Enter' || which === 13) {
+      return 'Enter';
+    }
+    if (code === 'Escape' || code === 'Esc' || which === 27) {
+      return 'Escape';
+    }
+    if (code === 'ArrowDown' || which === 40) {
+      return 'ArrowDown';
+    }
+    if (code === 'ArrowUp' || which === 38) {
+      return 'ArrowUp';
+    }
+    if (code === 'ArrowLeft' || which === 37) {
+      return 'ArrowLeft';
+    }
+    if (code === 'ArrowRight' || which === 39) {
+      return 'ArrowRight';
+    }
+    if (code === 'Home' || which === 36) {
+      return 'Home';
+    }
+    if (code === 'End' || which === 35) {
+      return 'End';
+    }
+    if (code === 'Space' || code === 'Spacebar' || which === 32) {
+      return ' ';
+    }
+    return event.key;
+  }
+
   isSpaceKey(event) {
-    return event.key === ' ' || event.key === 'Spacebar' || event.code === 'Space';
+    const key = this.eventKey(event);
+    return key === ' ' || key === 'Spacebar' || event.code === 'Space';
   }
 
   isActivationKey(event) {
-    return event.key === 'Enter' || this.isSpaceKey(event);
+    return this.eventKey(event) === 'Enter' || this.isSpaceKey(event);
   }
 
   getMenuItems(root) {
@@ -25,7 +62,7 @@ class DropdownKeyboardHelpersClass {
       item.setAttribute('tabindex', index === focusedIndex ? '0' : '-1');
     });
     if (items[focusedIndex]) {
-      items[focusedIndex].focus();
+      items[focusedIndex].focus({ preventScroll: true });
     }
   }
 
@@ -41,34 +78,35 @@ class DropdownKeyboardHelpersClass {
 
   handleMenuKeydown(event, { items = [], onEscape, onActivate } = {}) {
     const currentIndex = items.indexOf(document.activeElement);
+    const key = this.eventKey(event);
 
-    if (event.key === 'ArrowDown') {
+    if (key === 'ArrowDown') {
       event.preventDefault();
       event.stopPropagation();
       this.applyRovingTabindex(items, this.nextIndex(currentIndex, items.length, 1));
       return;
     }
 
-    if (event.key === 'ArrowUp') {
+    if (key === 'ArrowUp') {
       event.preventDefault();
       event.stopPropagation();
       this.applyRovingTabindex(items, this.nextIndex(currentIndex, items.length, -1));
       return;
     }
 
-    if (event.key === 'Home') {
+    if (key === 'Home') {
       event.preventDefault();
       this.applyRovingTabindex(items, 0);
       return;
     }
 
-    if (event.key === 'End') {
+    if (key === 'End') {
       event.preventDefault();
       this.applyRovingTabindex(items, items.length - 1);
       return;
     }
 
-    if (event.key === 'Escape') {
+    if (key === 'Escape') {
       event.preventDefault();
       if (onEscape) {
         onEscape();
@@ -83,8 +121,10 @@ class DropdownKeyboardHelpersClass {
   }
 
   handleTriggerKeydown(event, { isOpen, isDisabled, onToggle, onFocusFirst, onFocusLast, onClose } = {}) {
+    const key = this.eventKey(event);
+
     if (isDisabled) {
-      if (this.isActivationKey(event) || event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      if (this.isActivationKey(event) || key === 'ArrowDown' || key === 'ArrowUp') {
         event.preventDefault();
       }
       return;
@@ -95,7 +135,7 @@ class DropdownKeyboardHelpersClass {
       return;
     }
 
-    if (event.key === 'Escape') {
+    if (key === 'Escape') {
       if (isOpen && onClose) {
         event.preventDefault();
         onClose();
@@ -103,7 +143,7 @@ class DropdownKeyboardHelpersClass {
       return;
     }
 
-    if (event.key === 'ArrowDown') {
+    if (key === 'ArrowDown') {
       event.preventDefault();
       event.stopPropagation();
       if (isOpen) {
@@ -116,7 +156,7 @@ class DropdownKeyboardHelpersClass {
       return;
     }
 
-    if (event.key === 'ArrowUp') {
+    if (key === 'ArrowUp') {
       event.preventDefault();
       event.stopPropagation();
       if (isOpen) {

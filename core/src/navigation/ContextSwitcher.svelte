@@ -234,13 +234,38 @@
     if (isMobile) {
       return;
     }
+    const attempt = () => {
+      const popover = document.getElementById('contextSwitcherPopover');
+      if (popover) {
+        popover.removeAttribute('inert');
+      }
+      focusMenuItem(focusMenuOnOpen);
+    };
     tick().then(() => {
+      attempt();
       requestAnimationFrame(() => {
-        if (isDropdownOpen()) {
-          focusMenuItem(focusMenuOnOpen);
-        }
+        attempt();
+        setTimeout(attempt, 0);
       });
     });
+  }
+
+  function triggerKeyboardAction(node) {
+    node.addEventListener('keydown', onTriggerKeydown);
+    return {
+      destroy() {
+        node.removeEventListener('keydown', onTriggerKeydown);
+      }
+    };
+  }
+
+  function popoverKeyboardAction(node) {
+    node.addEventListener('keydown', onPopoverKeydown);
+    return {
+      destroy() {
+        node.removeEventListener('keydown', onPopoverKeydown);
+      }
+    };
   }
 
   async function closeAndFocusTrigger() {
@@ -327,7 +352,7 @@
               title={selectedLabel ? selectedLabel : config.defaultLabel}
               on:mousedown={onTriggerMouseDown}
               on:click={onTriggerClick}
-              on:keydown={onTriggerKeydown}
+              use:triggerKeyboardAction
               aria-disabled={!renderAsDropdown}
               data-testid="luigi-contextswitcher-button"
             >
@@ -340,6 +365,7 @@
             </a>
           {:else}
             <button
+              type="button"
               class="fd-button fd-button--transparent fd-button--menu fd-shellbar__button fd-shellbar__button--menu lui-ctx-switch-menu"
               aria-controls="contextSwitcherPopover"
               aria-expanded={dropDownStates.contextSwitcherPopover || false}
@@ -348,7 +374,7 @@
               title={selectedLabel ? selectedLabel : config.defaultLabel}
               on:mousedown={onTriggerMouseDown}
               on:click={onTriggerClick}
-              on:keydown={onTriggerKeydown}
+              use:triggerKeyboardAction
               aria-disabled={!renderAsDropdown}
               data-testid="luigi-contextswitcher-button"
             >
@@ -369,8 +395,7 @@
           aria-hidden={!(dropDownStates.contextSwitcherPopover || false)}
           id="contextSwitcherPopover"
           data-testid="luigi-contextswitcher-popover"
-          inert={dropDownStates.contextSwitcherPopover ? undefined : true}
-          on:keydown={onPopoverKeydown}
+          use:popoverKeyboardAction
         >
           <ContextSwitcherNav
             {actions}

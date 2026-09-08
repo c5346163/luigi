@@ -41,9 +41,10 @@
       return false;
     }
     const popover = document.getElementById('contextSwitcherPopover');
-    if (!popover || popover.getAttribute('aria-hidden') !== 'false') {
+    if (!popover || popover.getAttribute('aria-hidden') === 'true') {
       return false;
     }
+    popover.removeAttribute('inert');
     const menuItems = DropdownKeyboardHelpers.getMenuItems(menuEl);
     if (!menuItems.length) {
       return false;
@@ -61,11 +62,15 @@
       return;
     }
     const popover = document.getElementById('contextSwitcherPopover');
-    if (!popover || popover.getAttribute('aria-hidden') !== 'false') {
+    if (!popover || popover.getAttribute('aria-hidden') === 'true') {
       return;
     }
-    const trigger = document.querySelector('[data-testid="luigi-contextswitcher-button"]');
-    if (document.activeElement === trigger) {
+    popover.removeAttribute('inert');
+    const items = DropdownKeyboardHelpers.getMenuItems(menuEl);
+    if (!items.length) {
+      return;
+    }
+    if (!items.includes(document.activeElement)) {
       focusOpenItem();
     }
   }
