@@ -44,8 +44,24 @@
   let popoverEl;
   let focusMenuOnOpen = 'first';
   let skipNextTriggerClick = false;
+  // Keep in sync with $desktopMaxWidth in core/src/styles/_variables.scss.
+  let isNarrowViewport =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(max-width: 899px)').matches
+      : false;
 
   onMount(async () => {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mq = window.matchMedia('(max-width: 899px)');
+      const syncViewport = (event) => {
+        isNarrowViewport = event && typeof event.matches === 'boolean' ? event.matches : mq.matches;
+      };
+      if (mq.addEventListener) {
+        mq.addEventListener('change', syncViewport);
+      } else if (mq.addListener) {
+        mq.addListener(syncViewport);
+      }
+    }
     StateHelpers.doOnStoreChange(store, async () => {
       const contextSwitcherConfig = LuigiConfig.getConfigValue('navigation.contextSwitcher');
       contextSwitcherEnabled = !!contextSwitcherConfig;
@@ -205,12 +221,26 @@
   }
 
   function focusMenuItem(which) {
-    const items = DropdownKeyboardHelpers.getMenuItems(popoverEl);
+    const root = !isMobile ? document.getElementById('contextSwitcherPopover') || popoverEl : popoverEl;
+    const items = DropdownKeyboardHelpers.getMenuItems(root);
     if (!items.length) {
       return;
     }
     const index = which === 'last' ? items.length - 1 : 0;
     DropdownKeyboardHelpers.applyRovingTabindex(items, index);
+  }
+
+  function scheduleMenuFocus() {
+    if (isMobile) {
+      return;
+    }
+    tick().then(() => {
+      requestAnimationFrame(() => {
+        if (isDropdownOpen()) {
+          focusMenuItem(focusMenuOnOpen);
+        }
+      });
+    });
   }
 
   async function closeAndFocusTrigger() {
@@ -245,22 +275,23 @@
     }
     focusMenuOnOpen = 'first';
     toggleDropdownState();
+    scheduleMenuFocus();
   }
 
   function onTriggerKeydown(event) {
     DropdownKeyboardHelpers.handleTriggerKeydown(event, {
       isOpen: isDropdownOpen(),
       isDisabled: !renderAsDropdown || event.currentTarget.getAttribute('aria-disabled') === 'true',
-      isAnchor: event.currentTarget.tagName === 'A',
       onToggle: (focus) => {
         focusMenuOnOpen = focus || 'first';
-        if (event.currentTarget.tagName === 'A' && DropdownKeyboardHelpers.isActivationKey(event)) {
+        if (DropdownKeyboardHelpers.isActivationKey(event)) {
           skipNextTriggerClick = true;
           setTimeout(() => {
             skipNextTriggerClick = false;
-          }, 500);
+          }, 1000);
         }
         toggleDropdownState();
+        scheduleMenuFocus();
       },
       onFocusFirst: () => focusMenuItem('first'),
       onFocusLast: () => focusMenuItem('last'),
@@ -338,6 +369,7 @@
           aria-hidden={!(dropDownStates.contextSwitcherPopover || false)}
           id="contextSwitcherPopover"
           data-testid="luigi-contextswitcher-popover"
+          inert={dropDownStates.contextSwitcherPopover ? undefined : true}
           on:keydown={onPopoverKeydown}
         >
           <ContextSwitcherNav
@@ -361,7 +393,7 @@
     </div>
   {/if}
   <!-- MOBILE VERSION (fullscreen dialog): -->
-  {#if isMobile && dropDownStates.contextSwitcherPopover && renderAsDropdown}
+  {#if isMobile && isNarrowViewport && dropDownStates.contextSwitcherPopover && renderAsDropdown}
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <div class="fd-dialog fd-dialog--active" role="presentation" on:click|stopPropagation={() => {}}>
       <div

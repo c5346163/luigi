@@ -40,9 +40,6 @@
     if (!isContextSwitcherDropdownShown || !menuEl || isMobile) {
       return false;
     }
-    if (!menuEl.getClientRects().length) {
-      return false;
-    }
     const popover = document.getElementById('contextSwitcherPopover');
     if (!popover || popover.getAttribute('aria-hidden') !== 'false') {
       return false;

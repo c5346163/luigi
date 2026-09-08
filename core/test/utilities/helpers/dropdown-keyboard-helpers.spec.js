@@ -241,7 +241,7 @@ describe('Dropdown-keyboard-helpers', () => {
       assert.isTrue(toggled);
     });
 
-    it('does not toggle a button trigger on Space so the native click can run', () => {
+    it('toggles a button trigger on Space', () => {
       const trigger = document.createElement('button');
       document.body.appendChild(trigger);
       let toggled = false;
@@ -253,7 +253,7 @@ describe('Dropdown-keyboard-helpers', () => {
         }
       });
 
-      assert.isFalse(toggled);
+      assert.isTrue(toggled);
     });
 
     it('opens to the first item on ArrowDown and last item on ArrowUp', () => {
@@ -326,21 +326,24 @@ describe('Dropdown-keyboard-helpers', () => {
 
       assert.isTrue(toggled);
       assert.isTrue(event.defaultPrevented);
+      assert.isTrue(event.cancelBubble);
     });
 
-    it('does not toggle a button trigger on Enter so the native click can run', () => {
+    it('toggles a button trigger on Enter', () => {
       const trigger = document.createElement('button');
       document.body.appendChild(trigger);
       let toggled = false;
+      const event = dispatchKey(trigger, 'Enter');
 
-      DropdownKeyboardHelpers.handleTriggerKeydown(dispatchKey(trigger, 'Enter'), {
+      DropdownKeyboardHelpers.handleTriggerKeydown(event, {
         isAnchor: false,
         onToggle: () => {
           toggled = true;
         }
       });
 
-      assert.isFalse(toggled);
+      assert.isTrue(toggled);
+      assert.isTrue(event.defaultPrevented);
     });
 
     it('prevents activation keys on a disabled trigger', () => {
